@@ -1,10 +1,7 @@
 import React, { useState } from "react";
-import { BrowserRouter as Router, Routes, Route, useNavigate } from "react-router-dom";
-import CompleteProfile from "./CompleteProfile"; // Ensure this is the correct path
-import Dashboard from "./Dashboard"; // Ensure this is the correct path
-import { supabase } from "./supabaseClient"; // Supabase client
+import { useNavigate } from "react-router-dom";
+import { supabase } from "./supabaseClient";
 
-// This is your main App component, which handles login/signup
 function App() {
   const [isLogin, setIsLogin] = useState(false); // Toggle between login/signup
   const [formData, setFormData] = useState({
@@ -15,9 +12,8 @@ function App() {
   });
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
-  const navigate = useNavigate(); // React Router's navigation hook
+  const navigate = useNavigate();
 
-  // Form validation
   const validateForm = () => {
     const newErrors = {};
     if (!formData.username && !isLogin) newErrors.username = "Username is required.";
@@ -37,6 +33,7 @@ function App() {
     });
   };
 
+  // Handle sign-up and login form submission
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
@@ -67,7 +64,7 @@ function App() {
 
           if (profileError) throw profileError;
 
-          // Check if the profile is incomplete
+          // Check if the profile is incomplete (check each required field)
           const isProfileComplete =
             profileData.display_name &&
             profileData.age &&
@@ -84,12 +81,14 @@ function App() {
             profileData.smoking !== null &&
             profileData.drinking !== null &&
             profileData.spoken_languages &&
-            profileData.gallery && profileData.gallery.length > 0;
+            profileData.gallery && profileData.gallery.length > 0; // Ensure gallery has images
 
           // Redirect based on profile completeness
           if (isProfileComplete) {
+            // Profile complete, redirect to dashboard
             navigate("/dashboard", { state: { username: profileData.display_name } });
           } else {
+            // Profile incomplete, redirect to profile completion form
             navigate("/complete-profile", { state: { userId, username: profileData.display_name } });
           }
         } else {
@@ -232,17 +231,4 @@ function App() {
   );
 }
 
-// Main app component with routing setup
-function MainApp() {
-  return (
-    <Router>
-      <Routes>
-        <Route path="/" element={<App />} />
-        <Route path="/complete-profile" element={<CompleteProfile />} />
-        <Route path="/dashboard" element={<Dashboard />} />
-      </Routes>
-    </Router>
-  );
-}
-
-export default MainApp;
+export default App;
