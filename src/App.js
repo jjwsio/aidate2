@@ -1,9 +1,10 @@
 import React, { useState } from "react";
 import { BrowserRouter as Router, Routes, Route, useNavigate } from "react-router-dom";
-import { supabase } from "./supabaseClient";
-import CompleteProfile from "./CompleteProfile";
-import Dashboard from "./Dashboard";
+import CompleteProfile from "./CompleteProfile"; // Ensure this is the correct path
+import Dashboard from "./Dashboard"; // Ensure this is the correct path
+import { supabase } from "./supabaseClient"; // Supabase client
 
+// This is your main App component, which handles login/signup
 function App() {
   const [isLogin, setIsLogin] = useState(false); // Toggle between login/signup
   const [formData, setFormData] = useState({
@@ -14,9 +15,9 @@ function App() {
   });
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
-  const navigate = useNavigate();
+  const navigate = useNavigate(); // React Router's navigation hook
 
-  // Form validation function
+  // Form validation
   const validateForm = () => {
     const newErrors = {};
     if (!formData.username && !isLogin) newErrors.username = "Username is required.";
@@ -36,7 +37,6 @@ function App() {
     });
   };
 
-  // Handle sign-up and login form submission
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
@@ -232,7 +232,7 @@ function App() {
   );
 }
 
-// Main app component to set up routes
+// Main app component with routing setup
 function MainApp() {
   return (
     <Router>
@@ -240,7 +240,6 @@ function MainApp() {
         <Route path="/" element={<App />} />
         <Route path="/complete-profile" element={<CompleteProfile />} />
         <Route path="/dashboard" element={<Dashboard />} />
-        {/* Add more routes as needed */}
       </Routes>
     </Router>
   );
