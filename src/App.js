@@ -89,6 +89,7 @@ function App() {
             navigate("/dashboard", { state: { username: profileData.display_name } });
           } else {
             // Profile incomplete, redirect to profile completion form
+            // Redirect to complete profile form if the profile is incomplete
             navigate("/complete-profile", { state: { userId, username: profileData.display_name } });
           }
         } else {
