@@ -1,7 +1,10 @@
 import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { supabase } from "./supabaseClient";
+import { BrowserRouter as Router, Routes, Route, useNavigate } from "react-router-dom";
+import { supabase } from "./supabaseClient"; // Ensure this points to your Supabase client
+import CompleteProfile from "./CompleteProfile"; // Adjust path if needed
+import Dashboard from "./Dashboard"; // Adjust path if needed
 
+// The login/signup component
 function App() {
   const [isLogin, setIsLogin] = useState(false); // Toggle between login/signup
   const [formData, setFormData] = useState({
@@ -12,8 +15,9 @@ function App() {
   });
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
-  const navigate = useNavigate();
+  const navigate = useNavigate(); // React Router's useNavigate hook for navigation
 
+  // Form validation
   const validateForm = () => {
     const newErrors = {};
     if (!formData.username && !isLogin) newErrors.username = "Username is required.";
@@ -33,7 +37,6 @@ function App() {
     });
   };
 
-  // Handle sign-up and login form submission
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
@@ -51,7 +54,7 @@ function App() {
 
           const userId = loginData.user.id;
 
-          // Fetch user profile
+          // Fetch user profile data
           const { data: profileData, error: profileError } = await supabase
             .from("profiles")
             .select(
@@ -64,7 +67,7 @@ function App() {
 
           if (profileError) throw profileError;
 
-          // Check if the profile is incomplete (check each required field)
+          // Check if the profile is incomplete
           const isProfileComplete =
             profileData.display_name &&
             profileData.age &&
@@ -81,14 +84,12 @@ function App() {
             profileData.smoking !== null &&
             profileData.drinking !== null &&
             profileData.spoken_languages &&
-            profileData.gallery && profileData.gallery.length > 0; // Ensure gallery has images
+            profileData.gallery && profileData.gallery.length > 0;
 
           // Redirect based on profile completeness
           if (isProfileComplete) {
-            // Profile complete, redirect to dashboard
             navigate("/dashboard", { state: { username: profileData.display_name } });
           } else {
-            // Profile incomplete, redirect to profile completion form
             navigate("/complete-profile", { state: { userId, username: profileData.display_name } });
           }
         } else {
@@ -107,13 +108,14 @@ function App() {
             }
           }
 
+          // Insert initial profile data
           const { error: profileError } = await supabase.from("profiles").insert([
             { id: signUpData.user.id, username: formData.username },
           ]);
 
           if (profileError) throw profileError;
 
-          setIsLogin(true);
+          setIsLogin(true); // Switch to login mode after signup
           alert("Sign up successful! You can now log in.");
         }
       } catch (error) {
@@ -231,4 +233,17 @@ function App() {
   );
 }
 
-export default App;
+// Main app component with routes for login, complete-profile, and dashboard
+function MainApp() {
+  return (
+    <Router>
+      <Routes>
+        <Route path="/" element={<App />} />
+        <Route path="/complete-profile" element={<CompleteProfile />} />
+        <Route path="/dashboard" element={<Dashboard />} />
+      </Routes>
+    </Router>
+  );
+}
+
+export default MainApp;
