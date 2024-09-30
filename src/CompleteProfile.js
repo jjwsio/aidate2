@@ -29,7 +29,6 @@ function CompleteProfile() {
   const userId = location.state.userId;
   const username = location.state.username;
 
-  // Handle profile update and gallery upload
   const handleNext = async (e) => {
     e.preventDefault();
     if (step === 7) {
@@ -75,7 +74,6 @@ function CompleteProfile() {
     }
   };
 
-  // Handle form input changes
   const handleChange = (e) => {
     const { name, value, files } = e.target;
     if (name === "profile_picture") {
