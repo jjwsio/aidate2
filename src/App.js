@@ -11,13 +11,14 @@ function App() {
     confirmPassword: "",
   });
   const [errors, setErrors] = useState({}); // Validation errors
+  const [loading, setLoading] = useState(false); // Loading state
   const navigate = useNavigate(); // To redirect after login/signup
 
   // Form validation function
   const validateForm = () => {
     const newErrors = {};
     if (!formData.username && !isLogin) newErrors.username = "Username is required.";
-    if (!formData.email && !isLogin) newErrors.email = "Email is required.";
+    if (!formData.email) newErrors.email = "Email is required.";
     if (!formData.password) newErrors.password = "Password is required.";
     if (formData.password !== formData.confirmPassword && !isLogin)
       newErrors.confirmPassword = "Passwords do not match.";
@@ -36,6 +37,8 @@ function App() {
   // Handle sign up and login form submission
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setLoading(true); // Start loading
+    setErrors({}); // Clear previous errors
     if (validateForm()) {
       try {
         if (isLogin) {
@@ -57,25 +60,49 @@ function App() {
           navigate("/dashboard", { state: { username: profileData.username } });
         } else {
           // Handle Signup
+          console.log("Signing up user...");
           const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
             email: formData.email,
             password: formData.password,
           });
-          if (signUpError) throw signUpError;
+
+          if (signUpError) {
+            // Check if the error is due to the user already being registered
+            if (signUpError.message.includes("User already registered")) {
+              setErrors({
+                form: "User already exists. Please log in instead.",
+              });
+              return; // Stop further processing
+            } else {
+              throw signUpError; // For other errors
+            }
+          }
+
+          console.log("User signed up:", signUpData);
 
           // Insert the username into the profiles table
           const { error: profileError } = await supabase.from("profiles").insert([
             { id: signUpData.user.id, username: formData.username },
           ]);
-          if (profileError) throw profileError;
 
-          // Redirect to login after signup
+          if (profileError) {
+            throw profileError;
+          }
+
+          console.log("Username saved in profile:", formData.username);
+
+          // Redirect to login after successful signup
           setIsLogin(true);
+          alert("Sign up successful! You can now log in.");
         }
       } catch (error) {
-        console.error(error.message);
+        console.error("Error:", error.message);
         setErrors({ form: error.message });
+      } finally {
+        setLoading(false); // End loading
       }
+    } else {
+      setLoading(false); // End loading if validation failed
     }
   };
 
@@ -85,6 +112,10 @@ function App() {
         <h1 className="text-2xl font-semibold text-white mb-6">
           {isLogin ? "Login to Your Account" : "Sign Up for LoveDate"}
         </h1>
+
+        {errors.form && (
+          <p className="text-red-500 text-sm mb-4">{errors.form}</p>
+        )}
 
         {/* Form */}
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -156,8 +187,9 @@ function App() {
           <button
             type="submit"
             className="w-full bg-purple-500 text-white py-2 rounded-md font-medium hover:bg-purple-600 transition"
+            disabled={loading}
           >
-            {isLogin ? "Login" : "Sign Up"}
+            {loading ? "Processing..." : isLogin ? "Login" : "Sign Up"}
           </button>
 
           {/* Forgot Password (only for login) */}
@@ -197,5 +229,5 @@ function App() {
     </div>
   );
 }
- 
+
 export default App;
