@@ -233,17 +233,3 @@ function App() {
   );
 }
 
-// Main app component with routes for login, complete-profile, and dashboard
-function MainApp() {
-  return (
-    <Router>
-      <Routes>
-        <Route path="/" element={<App />} />
-        <Route path="/complete-profile" element={<CompleteProfile />} />
-        <Route path="/dashboard" element={<Dashboard />} />
-      </Routes>
-    </Router>
-  );
-}
-
-export default MainApp;
