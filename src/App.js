@@ -1,23 +1,25 @@
 import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "./supabaseClient";
 
 function App() {
-  const [isLogin, setIsLogin] = useState(false); // To toggle between forms
+  const [isLogin, setIsLogin] = useState(false); // Toggle between login/signup
   const [formData, setFormData] = useState({
     username: "",
     email: "",
     password: "",
     confirmPassword: "",
   });
-  const [errors, setErrors] = useState({}); // For validation errors
+  const [errors, setErrors] = useState({}); // Validation errors
+  const navigate = useNavigate(); // To redirect after login/signup
 
   // Form validation function
   const validateForm = () => {
     const newErrors = {};
-    if (!formData.username) newErrors.username = "Username is required.";
-    if (!isLogin && !formData.email) newErrors.email = "Email is required.";
+    if (!formData.username && !isLogin) newErrors.username = "Username is required.";
+    if (!formData.email && !isLogin) newErrors.email = "Email is required.";
     if (!formData.password) newErrors.password = "Password is required.";
-    if (!isLogin && formData.password !== formData.confirmPassword)
+    if (formData.password !== formData.confirmPassword && !isLogin)
       newErrors.confirmPassword = "Passwords do not match.";
 
     setErrors(newErrors);
@@ -31,10 +33,49 @@ function App() {
     });
   };
 
-  const handleSubmit = (e) => {
+  // Handle sign up and login form submission
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (validateForm()) {
-      console.log("Form submitted:", formData);
+      try {
+        if (isLogin) {
+          // Handle Login
+          const { data, error } = await supabase.auth.signInWithPassword({
+            email: formData.email,
+            password: formData.password,
+          });
+          if (error) throw error;
+
+          // Fetch the username from the profiles table
+          const { data: profileData } = await supabase
+            .from("profiles")
+            .select("username")
+            .eq("id", data.user.id)
+            .single();
+
+          // Redirect to dashboard with username
+          navigate("/dashboard", { state: { username: profileData.username } });
+        } else {
+          // Handle Signup
+          const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
+            email: formData.email,
+            password: formData.password,
+          });
+          if (signUpError) throw signUpError;
+
+          // Insert the username into the profiles table
+          const { error: profileError } = await supabase.from("profiles").insert([
+            { id: signUpData.user.id, username: formData.username },
+          ]);
+          if (profileError) throw profileError;
+
+          // Redirect to login after signup
+          setIsLogin(true);
+        }
+      } catch (error) {
+        console.error(error.message);
+        setErrors({ form: error.message });
+      }
     }
   };
 
@@ -47,37 +88,37 @@ function App() {
 
         {/* Form */}
         <form onSubmit={handleSubmit} className="space-y-4">
-          {/* Username */}
-          <div>
-            <input
-              type="text"
-              name="username"
-              placeholder="Username"
-              value={formData.username}
-              onChange={handleChange}
-              className="w-full p-2 rounded-md bg-gray-800 text-white"
-            />
-            {errors.username && (
-              <p className="text-red-500 text-sm">{errors.username}</p>
-            )}
-          </div>
-
-          {/* Email (only for signup) */}
+          {/* Username (for signup only) */}
           {!isLogin && (
             <div>
               <input
-                type="email"
-                name="email"
-                placeholder="Email"
-                value={formData.email}
+                type="text"
+                name="username"
+                placeholder="Username"
+                value={formData.username}
                 onChange={handleChange}
                 className="w-full p-2 rounded-md bg-gray-800 text-white"
               />
-              {errors.email && (
-                <p className="text-red-500 text-sm">{errors.email}</p>
+              {errors.username && (
+                <p className="text-red-500 text-sm">{errors.username}</p>
               )}
             </div>
           )}
+
+          {/* Email */}
+          <div>
+            <input
+              type="email"
+              name="email"
+              placeholder="Email"
+              value={formData.email}
+              onChange={handleChange}
+              className="w-full p-2 rounded-md bg-gray-800 text-white"
+            />
+            {errors.email && (
+              <p className="text-red-500 text-sm">{errors.email}</p>
+            )}
+          </div>
 
           {/* Password */}
           <div>
@@ -111,28 +152,6 @@ function App() {
             </div>
           )}
 
-          {/* Remember me (only for login) */}
-          {isLogin && (
-            <>
-              <div className="text-left">
-                <label className="text-gray-400">
-                  <input type="checkbox" className="mr-2" /> Remember me
-                </label>
-              </div>
-
-              {/* Forgot Password Link */}
-              <div className="text-right">
-                <button
-                  type="button"
-                  className="text-purple-400 underline hover:text-purple-500"
-                  onClick={() => console.log("Forgot Password clicked")}
-                >
-                  Forgot Password?
-                </button>
-              </div>
-            </>
-          )}
-
           {/* Submit Button */}
           <button
             type="submit"
@@ -140,6 +159,19 @@ function App() {
           >
             {isLogin ? "Login" : "Sign Up"}
           </button>
+
+          {/* Forgot Password (only for login) */}
+          {isLogin && (
+            <div className="text-right mt-2">
+              <button
+                type="button"
+                className="text-purple-400 underline hover:text-purple-500"
+                onClick={() => alert("Forgot Password")}
+              >
+                Forgot Password?
+              </button>
+            </div>
+          )}
         </form>
 
         {/* Toggle between login and signup */}
