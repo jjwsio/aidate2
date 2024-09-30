@@ -1,8 +1,8 @@
 import React, { useState } from "react";
 import { BrowserRouter as Router, Routes, Route, useNavigate } from "react-router-dom";
-import { supabase } from "./supabaseClient"; // Ensure this points to your Supabase client
-import CompleteProfile from "./CompleteProfile"; // Adjust path if needed
-import Dashboard from "./Dashboard"; // Adjust path if needed
+import { supabase } from "./supabaseClient"; // Your Supabase client setup
+import CompleteProfile from "./CompleteProfile"; // Import CompleteProfile component
+import Dashboard from "./Dashboard"; // Import Dashboard component
 
 // The login/signup component
 function App() {
