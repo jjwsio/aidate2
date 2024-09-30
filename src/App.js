@@ -1,7 +1,7 @@
 import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { supabase } from "./supabaseClient";
+import { supabase } from "./supabaseClient"; // Supabase client setup
 
+// Main login/signup component
 function App() {
   const [isLogin, setIsLogin] = useState(false); // Toggle between login/signup
   const [formData, setFormData] = useState({
@@ -12,8 +12,8 @@ function App() {
   });
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
-  const navigate = useNavigate();
 
+  // Form validation
   const validateForm = () => {
     const newErrors = {};
     if (!formData.username && !isLogin) newErrors.username = "Username is required.";
@@ -33,7 +33,7 @@ function App() {
     });
   };
 
-  // Handle sign-up and login form submission
+  // Form submission for login/signup
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
@@ -42,57 +42,18 @@ function App() {
     if (validateForm()) {
       try {
         if (isLogin) {
-          // Handle Login
+          // Handle login
           const { data: loginData, error: loginError } = await supabase.auth.signInWithPassword({
             email: formData.email,
             password: formData.password,
           });
           if (loginError) throw loginError;
 
-          const userId = loginData.user.id;
-
-          // Fetch user profile
-          const { data: profileData, error: profileError } = await supabase
-            .from("profiles")
-            .select(
-              `display_name, age, gender, about_me, location, looking_for, profession,
-               profile_picture, interests, hobbies, education, religion, smoking, drinking, 
-               spoken_languages, gallery`
-            )
-            .eq("id", userId)
-            .single();
-
-          if (profileError) throw profileError;
-
-          // Check if the profile is incomplete (check each required field)
-          const isProfileComplete =
-            profileData.display_name &&
-            profileData.age &&
-            profileData.gender &&
-            profileData.about_me &&
-            profileData.location &&
-            profileData.looking_for &&
-            profileData.profession &&
-            profileData.profile_picture &&
-            profileData.interests &&
-            profileData.hobbies &&
-            profileData.education &&
-            profileData.religion &&
-            profileData.smoking !== null &&
-            profileData.drinking !== null &&
-            profileData.spoken_languages &&
-            profileData.gallery && profileData.gallery.length > 0; // Ensure gallery has images
-
-          // Redirect based on profile completeness
-          if (isProfileComplete) {
-            // Profile complete, redirect to dashboard
-            navigate("/dashboard", { state: { username: profileData.display_name } });
-          } else {
-            // Profile incomplete, redirect to profile completion form
-            navigate("/complete-profile", { state: { userId, username: profileData.display_name } });
-          }
+          // Login successful (you can now add your dashboard navigation here)
+          console.log("Login successful:", loginData);
+          alert("Login successful! You are logged in.");
         } else {
-          // Handle Signup
+          // Handle signup
           const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
             email: formData.email,
             password: formData.password,
@@ -107,13 +68,14 @@ function App() {
             }
           }
 
+          // Insert the new user data into the profiles table
           const { error: profileError } = await supabase.from("profiles").insert([
             { id: signUpData.user.id, username: formData.username },
           ]);
 
           if (profileError) throw profileError;
 
-          setIsLogin(true);
+          setIsLogin(true); // Switch to login mode after signup
           alert("Sign up successful! You can now log in.");
         }
       } catch (error) {
@@ -134,9 +96,7 @@ function App() {
           {isLogin ? "Login to Your Account" : "Sign Up for LoveDate"}
         </h1>
 
-        {errors.form && (
-          <p className="text-red-500 text-sm mb-4">{errors.form}</p>
-        )}
+        {errors.form && <p className="text-red-500 text-sm mb-4">{errors.form}</p>}
 
         <form onSubmit={handleSubmit} className="space-y-4">
           {!isLogin && (
@@ -149,9 +109,7 @@ function App() {
                 onChange={handleChange}
                 className="w-full p-2 rounded-md bg-gray-800 text-white"
               />
-              {errors.username && (
-                <p className="text-red-500 text-sm">{errors.username}</p>
-              )}
+              {errors.username && <p className="text-red-500 text-sm">{errors.username}</p>}
             </div>
           )}
 
@@ -164,9 +122,7 @@ function App() {
               onChange={handleChange}
               className="w-full p-2 rounded-md bg-gray-800 text-white"
             />
-            {errors.email && (
-              <p className="text-red-500 text-sm">{errors.email}</p>
-            )}
+            {errors.email && <p className="text-red-500 text-sm">{errors.email}</p>}
           </div>
 
           <div>
@@ -178,9 +134,7 @@ function App() {
               onChange={handleChange}
               className="w-full p-2 rounded-md bg-gray-800 text-white"
             />
-            {errors.password && (
-              <p className="text-red-500 text-sm">{errors.password}</p>
-            )}
+            {errors.password && <p className="text-red-500 text-sm">{errors.password}</p>}
           </div>
 
           {!isLogin && (
