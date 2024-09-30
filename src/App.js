@@ -50,35 +50,36 @@ function App() {
           if (error) throw error;
 
           // Fetch the username from the profiles table
-          const { data: profileData } = await supabase
+          const { data: profileData, error: profileError } = await supabase
             .from("profiles")
             .select("username")
             .eq("id", data.user.id)
             .single();
 
-          // Redirect to dashboard with username
-          navigate("/dashboard", { state: { username: profileData.username } });
+          if (profileError) throw profileError;
+
+          // If no username is found, handle it gracefully
+          if (!profileData) {
+            setErrors({ form: "Profile not found. Please complete your profile." });
+          } else {
+            // Redirect to dashboard with username
+            navigate("/dashboard", { state: { username: profileData.username } });
+          }
         } else {
           // Handle Signup
-          console.log("Signing up user...");
           const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
             email: formData.email,
             password: formData.password,
           });
 
           if (signUpError) {
-            // Check if the error is due to the user already being registered
             if (signUpError.message.includes("User already registered")) {
-              setErrors({
-                form: "User already exists. Please log in instead.",
-              });
-              return; // Stop further processing
+              setErrors({ form: "User already exists. Please log in instead." });
+              return;
             } else {
-              throw signUpError; // For other errors
+              throw signUpError;
             }
           }
-
-          console.log("User signed up:", signUpData);
 
           // Insert the username into the profiles table
           const { error: profileError } = await supabase.from("profiles").insert([
@@ -89,8 +90,6 @@ function App() {
             throw profileError;
           }
 
-          console.log("Username saved in profile:", formData.username);
-
           // Redirect to login after successful signup
           setIsLogin(true);
           alert("Sign up successful! You can now log in.");
@@ -99,10 +98,24 @@ function App() {
         console.error("Error:", error.message);
         setErrors({ form: error.message });
       } finally {
-        setLoading(false); // End loading
+        setLoading(false);
       }
     } else {
       setLoading(false); // End loading if validation failed
+    }
+  };
+
+  // Handle Social Login (Google, GitHub, etc.)
+  const handleSocialLogin = async (provider) => {
+    try {
+      const { data, error } = await supabase.auth.signInWithOAuth({ provider });
+      if (error) throw error;
+
+      // Redirect to dashboard on successful social login
+      navigate("/dashboard", { state: { username: data.user.email } });
+    } catch (error) {
+      console.error("Social login error:", error.message);
+      setErrors({ form: error.message });
     }
   };
 
@@ -191,6 +204,24 @@ function App() {
           >
             {loading ? "Processing..." : isLogin ? "Login" : "Sign Up"}
           </button>
+
+          {/* Social Logins */}
+          <div className="space-y-2 mt-4">
+            <button
+              type="button"
+              onClick={() => handleSocialLogin("google")}
+              className="w-full bg-blue-500 text-white py-2 rounded-md font-medium hover:bg-blue-600 transition"
+            >
+              {isLogin ? "Login" : "Sign Up"} with Google
+            </button>
+            <button
+              type="button"
+              onClick={() => handleSocialLogin("github")}
+              className="w-full bg-gray-800 text-white py-2 rounded-md font-medium hover:bg-gray-900 transition"
+            >
+              {isLogin ? "Login" : "Sign Up"} with GitHub
+            </button>
+          </div>
 
           {/* Forgot Password (only for login) */}
           {isLogin && (
