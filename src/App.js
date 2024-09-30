@@ -113,11 +113,24 @@ function App() {
 
           {/* Remember me (only for login) */}
           {isLogin && (
-            <div className="text-left">
-              <label className="text-gray-400">
-                <input type="checkbox" className="mr-2" /> Remember me
-              </label>
-            </div>
+            <>
+              <div className="text-left">
+                <label className="text-gray-400">
+                  <input type="checkbox" className="mr-2" /> Remember me
+                </label>
+              </div>
+
+              {/* Forgot Password Link */}
+              <div className="text-right">
+                <button
+                  type="button"
+                  className="text-purple-400 underline hover:text-purple-500"
+                  onClick={() => console.log("Forgot Password clicked")}
+                >
+                  Forgot Password?
+                </button>
+              </div>
+            </>
           )}
 
           {/* Submit Button */}
@@ -136,7 +149,12 @@ function App() {
             onClick={() => {
               setIsLogin(!isLogin);
               setErrors({});
-              setFormData({ username: "", email: "", password: "", confirmPassword: "" }); // Reset form
+              setFormData({
+                username: "",
+                email: "",
+                password: "",
+                confirmPassword: "",
+              }); // Reset form
             }}
             className="text-purple-400 underline hover:text-purple-500"
           >
