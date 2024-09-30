@@ -90,7 +90,7 @@ function App() {
           if (isProfileComplete) {
             navigate("/dashboard", { state: { username: profileData.display_name } });
           } else {
-            navigate("/complete-profile", { state: { userId, username: profileData.display_name } });
+            navigate("/CompleteProfile", { state: { userId, username: profileData.display_name } });
           }
         } else {
           // Handle Signup
