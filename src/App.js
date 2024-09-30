@@ -1,6 +1,8 @@
 import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { BrowserRouter as Router, Routes, Route, useNavigate } from "react-router-dom";
 import { supabase } from "./supabaseClient";
+import CompleteProfile from "./CompleteProfile";
+import Dashboard from "./Dashboard";
 
 function App() {
   const [isLogin, setIsLogin] = useState(false); // Toggle between login/signup
@@ -14,6 +16,7 @@ function App() {
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
+  // Form validation function
   const validateForm = () => {
     const newErrors = {};
     if (!formData.username && !isLogin) newErrors.username = "Username is required.";
@@ -64,7 +67,7 @@ function App() {
 
           if (profileError) throw profileError;
 
-          // Check if the profile is incomplete (check each required field)
+          // Check if the profile is incomplete
           const isProfileComplete =
             profileData.display_name &&
             profileData.age &&
@@ -81,15 +84,12 @@ function App() {
             profileData.smoking !== null &&
             profileData.drinking !== null &&
             profileData.spoken_languages &&
-            profileData.gallery && profileData.gallery.length > 0; // Ensure gallery has images
+            profileData.gallery && profileData.gallery.length > 0;
 
           // Redirect based on profile completeness
           if (isProfileComplete) {
-            // Profile complete, redirect to dashboard
             navigate("/dashboard", { state: { username: profileData.display_name } });
           } else {
-            // Profile incomplete, redirect to profile completion form
-            // Redirect to complete profile form if the profile is incomplete
             navigate("/complete-profile", { state: { userId, username: profileData.display_name } });
           }
         } else {
@@ -232,4 +232,18 @@ function App() {
   );
 }
 
-export default App;
+// Main app component to set up routes
+function MainApp() {
+  return (
+    <Router>
+      <Routes>
+        <Route path="/" element={<App />} />
+        <Route path="/complete-profile" element={<CompleteProfile />} />
+        <Route path="/dashboard" element={<Dashboard />} />
+        {/* Add more routes as needed */}
+      </Routes>
+    </Router>
+  );
+}
+
+export default MainApp;
