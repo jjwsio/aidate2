@@ -10,11 +10,10 @@ function App() {
     password: "",
     confirmPassword: "",
   });
-  const [errors, setErrors] = useState({}); // Validation errors
-  const [loading, setLoading] = useState(false); // Loading state
-  const navigate = useNavigate(); // To redirect after login/signup
+  const [errors, setErrors] = useState({});
+  const [loading, setLoading] = useState(false);
+  const navigate = useNavigate();
 
-  // Form validation function
   const validateForm = () => {
     const newErrors = {};
     if (!formData.username && !isLogin) newErrors.username = "Username is required.";
@@ -24,7 +23,7 @@ function App() {
       newErrors.confirmPassword = "Passwords do not match.";
 
     setErrors(newErrors);
-    return Object.keys(newErrors).length === 0; // Return true if no errors
+    return Object.keys(newErrors).length === 0;
   };
 
   const handleChange = (e) => {
@@ -34,36 +33,63 @@ function App() {
     });
   };
 
-  // Handle sign up and login form submission
+  // Handle sign-up and login form submission
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setLoading(true); // Start loading
-    setErrors({}); // Clear previous errors
+    setLoading(true);
+    setErrors({});
+
     if (validateForm()) {
       try {
         if (isLogin) {
           // Handle Login
-          const { data, error } = await supabase.auth.signInWithPassword({
+          const { data: loginData, error: loginError } = await supabase.auth.signInWithPassword({
             email: formData.email,
             password: formData.password,
           });
-          if (error) throw error;
+          if (loginError) throw loginError;
 
-          // Fetch the username from the profiles table
+          const userId = loginData.user.id;
+
+          // Fetch user profile
           const { data: profileData, error: profileError } = await supabase
             .from("profiles")
-            .select("username")
-            .eq("id", data.user.id)
+            .select(
+              `display_name, age, gender, about_me, location, looking_for, profession,
+               profile_picture, interests, hobbies, education, religion, smoking, drinking, 
+               spoken_languages, gallery`
+            )
+            .eq("id", userId)
             .single();
 
           if (profileError) throw profileError;
 
-          // If no username is found, handle it gracefully
-          if (!profileData) {
-            setErrors({ form: "Profile not found. Please complete your profile." });
+          // Check if the profile is incomplete (check each required field)
+          const isProfileComplete =
+            profileData.display_name &&
+            profileData.age &&
+            profileData.gender &&
+            profileData.about_me &&
+            profileData.location &&
+            profileData.looking_for &&
+            profileData.profession &&
+            profileData.profile_picture &&
+            profileData.interests &&
+            profileData.hobbies &&
+            profileData.education &&
+            profileData.religion &&
+            profileData.smoking !== null &&
+            profileData.drinking !== null &&
+            profileData.spoken_languages &&
+            profileData.gallery && profileData.gallery.length > 0; // Ensure gallery has images
+
+          // Redirect based on profile completeness
+          if (isProfileComplete) {
+            // Profile complete, redirect to dashboard
+            navigate("/dashboard", { state: { username: profileData.display_name } });
           } else {
-            // Redirect to dashboard with username
-            navigate("/dashboard", { state: { username: profileData.username } });
+            // Profile incomplete, redirect to profile completion form
+            navigate("/complete-profile", { state: { userId, username: profileData.display_name } });
           }
         } else {
           // Handle Signup
@@ -81,16 +107,12 @@ function App() {
             }
           }
 
-          // Insert the username into the profiles table
           const { error: profileError } = await supabase.from("profiles").insert([
             { id: signUpData.user.id, username: formData.username },
           ]);
 
-          if (profileError) {
-            throw profileError;
-          }
+          if (profileError) throw profileError;
 
-          // Redirect to login after successful signup
           setIsLogin(true);
           alert("Sign up successful! You can now log in.");
         }
@@ -101,21 +123,7 @@ function App() {
         setLoading(false);
       }
     } else {
-      setLoading(false); // End loading if validation failed
-    }
-  };
-
-  // Handle Social Login (Google, GitHub, etc.)
-  const handleSocialLogin = async (provider) => {
-    try {
-      const { data, error } = await supabase.auth.signInWithOAuth({ provider });
-      if (error) throw error;
-
-      // Redirect to dashboard on successful social login
-      navigate("/dashboard", { state: { username: data.user.email } });
-    } catch (error) {
-      console.error("Social login error:", error.message);
-      setErrors({ form: error.message });
+      setLoading(false);
     }
   };
 
@@ -130,9 +138,7 @@ function App() {
           <p className="text-red-500 text-sm mb-4">{errors.form}</p>
         )}
 
-        {/* Form */}
         <form onSubmit={handleSubmit} className="space-y-4">
-          {/* Username (for signup only) */}
           {!isLogin && (
             <div>
               <input
@@ -149,7 +155,6 @@ function App() {
             </div>
           )}
 
-          {/* Email */}
           <div>
             <input
               type="email"
@@ -164,7 +169,6 @@ function App() {
             )}
           </div>
 
-          {/* Password */}
           <div>
             <input
               type="password"
@@ -179,7 +183,6 @@ function App() {
             )}
           </div>
 
-          {/* Confirm Password (only for signup) */}
           {!isLogin && (
             <div>
               <input
@@ -196,7 +199,6 @@ function App() {
             </div>
           )}
 
-          {/* Submit Button */}
           <button
             type="submit"
             className="w-full bg-purple-500 text-white py-2 rounded-md font-medium hover:bg-purple-600 transition"
@@ -204,40 +206,8 @@ function App() {
           >
             {loading ? "Processing..." : isLogin ? "Login" : "Sign Up"}
           </button>
-
-          {/* Social Logins */}
-          <div className="space-y-2 mt-4">
-            <button
-              type="button"
-              onClick={() => handleSocialLogin("google")}
-              className="w-full bg-blue-500 text-white py-2 rounded-md font-medium hover:bg-blue-600 transition"
-            >
-              {isLogin ? "Login" : "Sign Up"} with Google
-            </button>
-            <button
-              type="button"
-              onClick={() => handleSocialLogin("github")}
-              className="w-full bg-gray-800 text-white py-2 rounded-md font-medium hover:bg-gray-900 transition"
-            >
-              {isLogin ? "Login" : "Sign Up"} with GitHub
-            </button>
-          </div>
-
-          {/* Forgot Password (only for login) */}
-          {isLogin && (
-            <div className="text-right mt-2">
-              <button
-                type="button"
-                className="text-purple-400 underline hover:text-purple-500"
-                onClick={() => alert("Forgot Password")}
-              >
-                Forgot Password?
-              </button>
-            </div>
-          )}
         </form>
 
-        {/* Toggle between login and signup */}
         <p className="mt-6 text-gray-400">
           {isLogin ? "Don't have an account?" : "Already have an account?"}{" "}
           <button
@@ -249,7 +219,7 @@ function App() {
                 email: "",
                 password: "",
                 confirmPassword: "",
-              }); // Reset form
+              });
             }}
             className="text-purple-400 underline hover:text-purple-500"
           >
